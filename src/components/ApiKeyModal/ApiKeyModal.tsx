@@ -1,8 +1,5 @@
 import "./ApiKeyModal.css"; 
 import { useEffect, useState } from "react";
-import { validateApiKey } from "../../utils/validateApiKey";
-import { storeApiKey } from "../../utils/storage";
-
 
 type StatusState = {
   loading: boolean;
@@ -10,6 +7,9 @@ type StatusState = {
   isSuccess: boolean;
 }
 
+interface ApiKeyModalProps {
+  onSuccess: () => void;
+}
 
 const initialStatusState: StatusState = {
   loading: false,
@@ -24,18 +24,66 @@ const STATUS_MESSAGES = {
   ERROR: "Failed to validate key. Check console for details.",
 };
 
+// Utility functions - inline to avoid import issues
+const validateApiKey = async (apiKey: string): Promise<boolean> => {
+  if (!apiKey.startsWith('AIzaSy')) {
+    console.warn("API key format is incorrect.");
+    return false;
+  }
 
-export default function ApiKeyModal() {
+  try {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            role: "user",
+            parts: [{ text: "Hello, Gemini!" }] 
+          }]
+        })
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json(); 
+      console.error('API key validation failed with HTTP error:', response.status, errorData);
+      return false; 
+    }
+
+    const data = await response.json();
+
+    const isValid = data.candidates && data.candidates.length > 0 &&
+                    data.candidates[0].content && data.candidates[0].content.parts &&
+                    data.candidates[0].content.parts.length > 0 &&
+                    typeof data.candidates[0].content.parts[0].text === 'string' &&
+                    data.candidates[0].content.parts[0].text.trim().length > 0; 
+
+    if (!isValid) {
+      console.warn("API call was successful, but the model did not return expected content structure.", data);
+    }
+
+    console.log('Validation response:', data, 'isValid:', isValid); 
+    return isValid;
+
+  } catch (error) {
+    console.error('Network or parsing error during API key validation:', error);
+    return false;
+  }
+};
+
+const saveApiKey = async (apiKey: string): Promise<void> => {
+  if (typeof chrome !== "undefined" && chrome.storage?.local) {
+    await chrome.storage.local.set({ geminiApiKey: apiKey });
+  } else {
+    localStorage.setItem("geminiApiKey", apiKey);
+  }
+};
+
+export default function ApiKeyModal({onSuccess}: ApiKeyModalProps) {
   const [apiKey, setApiKey] = useState('');
-  const [status, setStatus] = useState<{
-    loading: boolean;
-    message: string | null;
-    isSuccess: boolean;
-  }>({
-    loading: false,
-    message: null,
-    isSuccess: false
-  });
+  const [status, setStatus] = useState<StatusState>(initialStatusState);
 
   useEffect(() => {
     const handleBlur = () => {
@@ -60,15 +108,19 @@ export default function ApiKeyModal() {
           message: STATUS_MESSAGES.INVALID,
           isSuccess: false
         });
-
       }
       
-      await storeApiKey(apiKey);
+      await saveApiKey(apiKey);
       setStatus({
         loading: false,
         message: STATUS_MESSAGES.SUCCESS,
         isSuccess: true
       });
+
+      // Navigate to main view after short delay
+      setTimeout(() => {
+        onSuccess();
+      }, 1000);
     } catch (error) {
       console.error('Validation failed:', error);
       setStatus({ 

@@ -1,0 +1,75 @@
+.sub-conversation-card {
+  background: white;
+  border-radius: 8px;
+  padding: 16px;
+  border: 1px solid #e5e7eb;
+  transition: all 0.2s;
+}
+
+.sub-conversation-card:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  transform: translateY(-1px);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.highlighted-text {
+  font-weight: 500;
+  color: #1a1a1a;
+  flex: 1;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.delete-btn {
+  background: none;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  font-size: 20px;
+  padding: 0;
+  margin-left: 8px;
+}
+
+.delete-btn:hover {
+  color: #ef4444;
+}
+
+.card-meta {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.context-type, .message-count {
+  font-size: 12px;
+  color: #6b7280;
+  background: #f3f4f6;
+  padding: 4px 8px;
+  border-radius: 12px;
+}
+
+.card-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.open-btn {
+  background: #4285f4;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.open-btn:hover {
+  background: #3367d6;
+}

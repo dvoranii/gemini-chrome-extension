@@ -1,11 +1,12 @@
-import ApiKeyModal from './components/ApiKeyModal/ApiKeyModal';
+import AppRouter from './components/AppRouter/AppRouter';
 import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
+import './App.css';
 
 function App() {
   return (
-      <ErrorBoundary>
-        <ApiKeyModal />
-      </ErrorBoundary>
+    <ErrorBoundary>
+      <AppRouter />
+    </ErrorBoundary>
   );
 }
 

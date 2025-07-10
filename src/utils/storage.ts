@@ -1,7 +1,8 @@
-export const storeApiKey = async (apiKey: string): Promise<void> => {
+export const getApiKey = async (): Promise<string | null> => {
   if (typeof chrome !== "undefined" && chrome.storage?.local) {
-    await chrome.storage.local.set({ geminiApiKey: apiKey });
+    const result = await chrome.storage.local.get(['geminiApiKey']);
+    return result.geminiApiKey || null;
   } else {
-    localStorage.setItem("geminiApiKey", apiKey);
+    return localStorage.getItem("geminiApiKey");
   }
 };
