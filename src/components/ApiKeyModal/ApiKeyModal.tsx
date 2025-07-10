@@ -1,6 +1,29 @@
+import "./ApiKeyModal.css"; 
 import { useEffect, useState } from "react";
 import { validateApiKey } from "../../utils/validateApiKey";
-import "./ApiKeyModal.css"; 
+import { storeApiKey } from "../../utils/storage";
+
+
+type StatusState = {
+  loading: boolean;
+  message: string | null;
+  isSuccess: boolean;
+}
+
+
+const initialStatusState: StatusState = {
+  loading: false,
+  message: null,
+  isSuccess: false
+}
+
+const STATUS_MESSAGES = {
+  SUCCESS: "API key saved successfully!",
+  DEV_SUCCESS: "API key saved (development mode)",
+  INVALID: "Invalid API key. Please check your key and try again.",
+  ERROR: "Failed to validate key. Check console for details.",
+};
+
 
 export default function ApiKeyModal() {
   const [apiKey, setApiKey] = useState('');
@@ -16,53 +39,50 @@ export default function ApiKeyModal() {
 
   useEffect(() => {
     const handleBlur = () => {
-      if (status.loading) {
-        window.focus();
-      }
+      if (status.loading) window.focus();
     };
 
     window.addEventListener('blur', handleBlur);
     return () => window.removeEventListener('blur', handleBlur);
   }, [status.loading]);
 
+  const resetStatus = () => setStatus(initialStatusState);
+
   const handleSave = async () => {
-    setStatus({ loading: true, message: null, isSuccess: false });
+    setStatus({ ...initialStatusState, loading: true });
 
     try {
       const isValid = await validateApiKey(apiKey);
       
-      if (isValid) {
-        if (typeof chrome !== 'undefined' && chrome.storage) {
-          await chrome.storage.local.set({ geminiApiKey: apiKey });
-          setStatus({ 
-            loading: false, 
-            message: 'API key saved successfully!', 
-            isSuccess: true 
-          });
-        } else {
-          localStorage.setItem('geminiApiKey', apiKey);
-          setStatus({ 
-            loading: false, 
-            message: 'API key saved (development mode)', 
-            isSuccess: true 
-          });
-        }
-      } else {
-        setStatus({ 
-          loading: false, 
-          message: 'Invalid API key. Please check your key and try again.', 
-          isSuccess: false 
+      if (!isValid) {
+        return setStatus({
+          loading: false,
+          message: STATUS_MESSAGES.INVALID,
+          isSuccess: false
         });
+
       }
+      
+      await storeApiKey(apiKey);
+      setStatus({
+        loading: false,
+        message: STATUS_MESSAGES.SUCCESS,
+        isSuccess: true
+      });
     } catch (error) {
       console.error('Validation failed:', error);
       setStatus({ 
         loading: false, 
-        message: 'Failed to validate key. Check console for details.', 
+        message: STATUS_MESSAGES.ERROR, 
         isSuccess: false 
       });
     }
   };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setApiKey(e.target.value);
+    resetStatus();
+  }
 
   return (
     <div className="modal-container">
@@ -75,10 +95,7 @@ export default function ApiKeyModal() {
         className="input-field"
         type="password"
         value={apiKey}
-        onChange={(e) => {
-          setApiKey(e.target.value);
-          setStatus({ loading: false, message: null, isSuccess: false });
-        }}
+        onChange={handleInputChange}
         placeholder="AIzaSy..."
         disabled={status.loading}
       />
@@ -94,10 +111,14 @@ export default function ApiKeyModal() {
         onClick={handleSave}
         disabled={status.loading || apiKey.length < 10}
       >
-        {status.loading && (
-          <span className="loading-spinner" />
+        {status.loading ? (
+          <>
+            <span className="loading-spinner" />
+            Verifying...
+          </>
+        ) : (
+          "Save Key"
         )}
-        {status.loading ? 'Verifying...' : 'Save Key'}
       </button>
     </div>
   );
