@@ -39,7 +39,7 @@ export default function SubConversationCard({
           className="open-btn"
           onClick={() => onOpen(conversation.id)}
         >
-          {conversation.isActive ? 'Continue' : 'Open'}
+          {conversation.messages.length > 0 ? 'Continue' : 'Open'}
         </button>
       </div>
     </div>

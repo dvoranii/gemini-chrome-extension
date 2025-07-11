@@ -1,4 +1,3 @@
-
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
     id: "importHighlightedText",
@@ -16,15 +15,7 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
     }, async (results) => {
       if (results && results[0] && results[0].result) {
         const highlightedText = results[0].result;
-
         await saveHighlightedTextToStorage(highlightedText);
-
-        try {
-            await chrome.action.openPopup();
-
-        } catch(error) {
-            console.error("Failed to open extension popup:", error);
-        }
        
       }
     });

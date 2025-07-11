@@ -10,4 +10,5 @@ export default defineConfig({
     react(),
     crx({ manifest })
   ]
+  // Remove the custom build config - let @crxjs/vite-plugin handle it
 })

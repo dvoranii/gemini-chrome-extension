@@ -24,7 +24,6 @@ const STATUS_MESSAGES = {
   ERROR: "Failed to validate key. Check console for details.",
 };
 
-// Utility functions - inline to avoid import issues
 const validateApiKey = async (apiKey: string): Promise<boolean> => {
   if (!apiKey.startsWith('AIzaSy')) {
     console.warn("API key format is incorrect.");
@@ -117,7 +116,6 @@ export default function ApiKeyModal({onSuccess}: ApiKeyModalProps) {
         isSuccess: true
       });
 
-      // Navigate to main view after short delay
       setTimeout(() => {
         onSuccess();
       }, 1000);

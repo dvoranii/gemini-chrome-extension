@@ -16,7 +16,11 @@ export type SubConversation = {
   isActive: boolean;
 }
 
-export default function ConversationView() {
+interface ConversationViewProps {
+    onOpenConversation: (conversation: SubConversation) => void;
+}
+
+export default function ConversationView({onOpenConversation}: ConversationViewProps) {
     const [subConversations, setSubConversations] = useState<SubConversation[]>([]);
      const [isStorageListenerActive, setIsStorageListenerActive] = useState(false);
 
@@ -27,7 +31,11 @@ export default function ConversationView() {
           if (result.subConversations) {
             const parsedConversations: SubConversation[] = JSON.parse(result.subConversations).map((conv: any) => ({
                 ...conv,
-                created: new Date(conv.created)
+                created: new Date(conv.created),
+                messages: conv.messages?.map((msg: any)=> ({
+                    ...msg,
+                    timestamp: new Date(msg.timestamp)
+                })) || []
             }));
             setSubConversations(parsedConversations);
           } else {
@@ -38,7 +46,11 @@ export default function ConversationView() {
           if (stored) {
             const parsedConversations: SubConversation[] = JSON.parse(stored).map((conv: any) => ({
                 ...conv,
-                created: new Date(conv.created)
+                created: new Date(conv.created),
+                messages: conv.messages?.map((msg: any) => ({
+                  ...msg,
+                  timestamp: new Date(msg.timestamp)
+                })) || []
             }));
             setSubConversations(parsedConversations);
           } else {
@@ -49,12 +61,10 @@ export default function ConversationView() {
 
     useEffect(() => {
         loadConversations();
-        // setupChromeMessageListener();
 
         const storageChangeListener = (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
             if (areaName === 'local' && changes.subConversations) {
                 console.log('chrome.storage.local.subConversations changed!');
-                // When storage changes, reload all conversations to update UI
                 loadConversations(); 
             }
         };
@@ -74,15 +84,16 @@ export default function ConversationView() {
         }
     },[loadConversations]);
 
-      const handleOpenConversation = (id: string) => {
-        console.log('Opening conversation:', id);
-        // TODO: Navigate to chat interface
+    const handleOpenConversation = (id: string) => {
+        const conversation = subConversations.find(conv => conv.id === id);
+        if (conversation) {
+            onOpenConversation(conversation);
+        }
     };
 
     const handleDeleteonversation = (id: string) => {
         setSubConversations(prev => {
             const updated = prev.filter(conv => conv.id !== id);
-            // Persist to storage immediately
             if (typeof chrome !== "undefined" && chrome.storage?.local) {
               chrome.storage.local.set({ subConversations: JSON.stringify(updated) });
             } else {
@@ -117,7 +128,9 @@ export default function ConversationView() {
                     </div>
                 ): (
                     <div className="conversations-grid">
-                        {subConversations.map(conversation => (
+                        {subConversations
+                        .sort((a,b) => b.created.getTime() - a.created.getTime())
+                        .map(conversation => (
                             <SubConversationCard
                                 key={conversation.id}
                                 conversation={conversation}
