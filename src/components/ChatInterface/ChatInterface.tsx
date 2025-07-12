@@ -19,6 +19,7 @@ export default function ChatInterface({
     const [isLoading, setIsLoading] = useState(false);
     const [localMessages, setLocalMessages] = useState(conversation.messages);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const [typedResponse, setTypedResponse] = useState<string>('');
 
     useEffect(() => {
         scrollToBottom();
@@ -77,23 +78,7 @@ export default function ChatInterface({
             });
 
             const response = await sendMessageToGemini(conversationHistory);
-
-            const assistantMessage = {
-                role: 'assistant' as const,
-                content: response,
-                timestamp: new Date()
-            };
-
-            const finalMessages = [...updatedMessages, assistantMessage];
-            setLocalMessages(finalMessages);
-
-            const updatedConversation = {
-                ...conversation,
-                messages: finalMessages,
-                isActive: true
-            }
-
-            onUpdateConversation(updatedConversation);
+            await typeMessage(response, updatedMessages);
 
         } catch(error) {
             console.error("Error sending message:", error);
@@ -109,6 +94,37 @@ export default function ChatInterface({
         } finally {
             setIsLoading(false);
         }
+    }
+
+    const typeMessage = async (fullText: string, currentMessages: typeof localMessages) => {
+        setTypedResponse('');
+        let i = 0;
+        const typingInterval = setInterval(() => {
+            if (i < fullText.length) {
+                setTypedResponse((prev) => prev+ fullText.charAt(i));
+                i++;
+                scrollToBottom();
+            } else {
+                clearInterval(typingInterval);
+
+                const assistantMessage = {
+                    role: 'assistant' as const,
+                    content: fullText,
+                    timestamp: new Date()
+                };
+
+                const finalMessages = [...currentMessages, assistantMessage];
+                setLocalMessages(finalMessages);
+
+                const updatedConversation = {
+                    ...conversation,
+                    messages: finalMessages,
+                    isActive: true
+                }
+
+                onUpdateConversation(updatedConversation);
+            }
+        }, 30)
     }
 
     const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -147,12 +163,19 @@ export default function ChatInterface({
           </div>
         )}
 
-        {localMessages.map((message, index) => (
+        {localMessages.slice(0, localMessages.length - (typedResponse ? 1 : 0)).map((message, index) => (
           <MessageBubble
             key={index}
             message={message}
           />
         ))}
+
+        {typedResponse && (
+            <MessageBubble
+            key="typing-response" 
+            message={{ role: 'assistant', content: typedResponse, timestamp: new Date() }}
+            />
+        )}
 
         {isLoading && (
           <div className="loading-message">
